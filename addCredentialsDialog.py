@@ -73,17 +73,31 @@ class AddCredentialsDialog(QDialog):
         except Exception as e:
             self.status_label.setText(f"Error generating password: {e}")
 
-    # Save credential to database
+        # Save credential to database
     def save_credential(self):
         try:
-            site = self.site_input.text()
-            username = self.username_input.text()
+            site = self.site_input.text().strip()
+            username = self.username_input.text().strip()
             password = self.password_input.text()
 
+            if not site or not username or not password:
+                self.status_label.setText("Please fill in all fields before saving.")
+                return
+
             response = apiCallerMethods.add_credential(site, username, password)
-            if "status" in response and response["status"] == "added":
+
+            if isinstance(response, dict) and response.get("status") == "added":
                 self.status_label.setText("Credential added successfully.")
             else:
-                self.status_label.setText(f"Error: {response.get('error', 'Unknown')}")
+                err = None
+                if isinstance(response, dict):
+                    err = response.get("error", "Unknown")
+                else:
+                    err = "Unknown (unexpected response type)"
+                self.status_label.setText(f"Error: {err}")
+
         except Exception as e:
             self.status_label.setText(f"Error saving credential: {e}")
+        finally:
+            # Close the dialog
+            self.close()
